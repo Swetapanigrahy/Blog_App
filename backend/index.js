@@ -7,15 +7,23 @@ import postRoutes from './routes/post.route.js';
 import commentRoutes from './routes/comment.route.js';
 import cookieParser from 'cookie-parser';
 import path from 'path';
-const cors = require('cors');
+import cors from 'cors'; // ✅ Changed from require to import for consistency
 
 dotenv.config();
+
+const app = express(); // ✅ Moved app declaration before using it
+
+// ✅ CORS setup with your Render frontend URL
 app.use(cors({
-  origin: 'https://multiuser-blog-app.onrender.com', // Replace with your Render deploy link
+  origin: 'https://multiuser-blog-app.onrender.com',
   credentials: true,
 }));
 
+// ✅ Middlewares
+app.use(express.json());
+app.use(cookieParser());
 
+// ✅ Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
@@ -25,28 +33,22 @@ mongoose
     console.log(err);
   });
 
+// ✅ Serve static frontend files
 const __dirname = path.resolve();
+app.use(express.static(path.join(__dirname, "/frontend/dist" )));
 
-const app = express();
-
-app.use(express.json());
-app.use(cookieParser());
-
-app.listen(3000, () => {
-  console.log('Server is running on port 3000!');
-});
-
+// ✅ API routes
 app.use('/api/user', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/post', postRoutes);
 app.use('/api/comment', commentRoutes);
 
-app.use(express.static(path.join(__dirname, "/frontend/dist" )));
-
+// ✅ Fallback for SPA routing
 app.get('*', (_, res) => {
   res.sendFile(path.resolve(__dirname, "frontend" ,  "dist" , "index.html"));
 });
 
+// ✅ Global error handler
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
@@ -55,4 +57,10 @@ app.use((err, req, res, next) => {
     statusCode,
     message,
   });
+});
+
+// ✅ Start the server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}!`);
 });
